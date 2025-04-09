@@ -1,0 +1,15 @@
+#!/usr/bin/ansible-playbook
+---
+- name: Randomly execute from lists of values
+  hosts: all
+  gather_facts: true
+
+  tasks:
+    - name: Check if Apache is running before further action
+      ansible.builtin.service:
+        name: httpd
+        state: started
+      register: check_result
+      until: check_result is changed
+      retries: 7
+      delay: 5

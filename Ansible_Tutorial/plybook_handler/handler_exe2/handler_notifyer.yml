@@ -1,0 +1,76 @@
+#!/usr/bin/ansible-playbook
+#!/usr/bin/ansible-playbook
+---
+- name: handler notifier install apache
+  hosts: all
+  become: true
+  gather_facts: true  # Required to determine the OS type
+
+  tasks:
+
+    - name: Ensure /files/devs directory exists on control node
+      ansible.builtin.file:
+        path: /files/devs
+        state: directory
+        mode: '0755'
+      delegate_to: localhost
+      run_once: true  # Ensures the task runs only once from the control node
+
+    - name: Create index2.html file using touch on control node
+      ansible.builtin.file:
+        path: /files/devs/index2.html
+        state: touch
+        mode: '0644'
+      delegate_to: localhost
+      run_once: true
+
+    - name: Write content to index2.html on control node
+      ansible.builtin.copy:
+        dest: /files/devs/index2.html
+        content: "THIS IS CREATED USING FILELINE MODULE\n"
+        mode: '0644'
+      delegate_to: localhost
+      run_once: true
+
+    - name: Copy index2.html to remote hosts
+      ansible.builtin.copy:
+        src: /files/devs/index2.html
+        dest: /var/www/html/index.html
+        owner: root
+        group: root
+        mode: '0644'
+      notify:
+        - Install Apache on Ubuntu
+        - Install Apache on CentOS & Amazon Linux
+        - Start and enable Apache on Ubuntu
+        - Start and enable Apache on CentOS & Amazon Linux
+
+  handlers:
+    - name: Install Apache on Ubuntu
+      ansible.builtin.apt:
+        name: apache2
+        state: present
+        update_cache: true
+      when: ansible_os_family == "Debian"
+
+    - name: Install Apache on CentOS & Amazon Linux
+      ansible.builtin.yum:
+        name: httpd
+        state: present
+        update_cache: true
+      when: ansible_os_family in ["RedHat", "Rocky", "AlmaLinux", "Amazon"]
+
+    - name: Start and enable Apache on Ubuntu
+      ansible.builtin.service:
+        name: apache2
+        state: started
+        enabled: true
+      when: ansible_os_family == "Debian"
+
+    - name: Start and enable Apache on CentOS & Amazon Linux
+      ansible.builtin.service:
+        name: httpd
+        state: started
+        enabled: true
+      when: ansible_os_family in ["RedHat", "Rocky", "AlmaLinux", "Amazon"]
+ 

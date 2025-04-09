@@ -1,0 +1,29 @@
+all:
+  hosts:
+   
+
+    ubuntu_node01:
+      ansible_host: 13.41.73.111
+      ansible_user: ubuntu
+
+    
+
+  children:
+    webserver02:
+      hosts:
+        ubuntu_node01:
+    
+    dbservers:
+      hosts:
+        ubuntu_node01:
+        
+    groupping:
+      children:
+       
+        dbservers:
+        webserver02:
+      vars:
+        ansible_user: ec2-user
+        #ansible_use: ansible_admin
+        ansible_ssh_private_key_file: new_ansible_key.pem
+   

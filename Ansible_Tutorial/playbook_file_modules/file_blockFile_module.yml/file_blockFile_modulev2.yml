@@ -1,0 +1,72 @@
+#!/usr/bin/ansible-playbook
+---
+- name: Manage Nginx Configuration
+  hosts: all
+  become: true
+  gather_facts: true
+
+  tasks:
+    - name: Copy nginx.conf from control node to remote hosts
+      ansible.builtin.copy:
+        src: ./folders/nginx.conf
+        dest: /etc/nginx/nginx.conf
+        mode: '0644'
+      delegate_to: localhost
+      run_once: true
+
+    - name: Ensure nginx directory exists
+      ansible.builtin.file:
+        path: /etc/nginx
+        state: directory
+        mode: '0755'
+
+    - name: Add API proxy configuration block
+      ansible.builtin.blockinfile:
+        path: /etc/nginx/nginx.conf
+        marker: "# {mark} START OF NEW BLOCK"
+        block: |
+          # New block of text
+          location /api {
+              proxy_pass http://backend_servers;
+              proxy_set_header Host $host;
+              proxy_set_header Host2a;
+              proxy_set_header Host2b;
+          }
+      register: block_result
+      notify: Reload Nginx
+
+    - name: Show block operation result
+      ansible.builtin.debug:
+        var: block_result
+      when: block_result is changed
+
+    - name: Update API proxy configuration block if previous change was made
+      ansible.builtin.blockinfile:
+        path: /etc/nginx/nginx.conf
+        marker: "# {mark} START OF NEW BLOCK"
+        block: |
+          # Updated block of text
+          location /api {
+              proxy_pass http://new_backend_servers;
+              proxy_set_header Host $host;
+              proxy_set_header remote;
+              proxy_set_header remote1;
+          }
+      when: block_result is changed
+      delegate_to: localhost
+      run_once: true
+      notify: Reload Nginx
+
+    - name: Remove API proxy configuration block if previous change was made
+      ansible.builtin.blockinfile:
+        path: /etc/nginx/nginx.conf
+        marker: "# {mark} START OF NEW BLOCK"
+        state: absent
+      when: block_result is changed
+      notify: Reload Nginx
+
+  handlers:
+    - name: Reload Nginx
+      ansible.builtin.service:
+        name: nginx
+        state: reloaded

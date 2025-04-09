@@ -1,0 +1,22 @@
+---
+- name: Randomly execute from lists of values
+  hosts: all
+  gather_facts: true
+
+  vars:
+    alpha: ['a', 'b', 'c', 'd', 'e']
+    numbers: [1, 2, 3, 4, 5]
+
+  tasks:
+    - name: Randomly select from list of values
+      debug:
+        msg: "{{ item }}"
+      loop: "{{ ['random choice1', 'random choice2', 'random choice3', 'random choice4'] | random }}"
+      # Note: This will select one random item from the list for the whole host group
+      # For per-host random selection, you might want to use random filter in the msg instead
+
+    - name: Loop over a list with index
+      debug:
+        msg: "At index {{ item.0 }} is value {{ item.1 }}"
+      loop: "{{ alpha | enumerate(start=0) }}"
+      # enumerate filter replaces with_indexed_items in modern Ansible

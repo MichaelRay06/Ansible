@@ -1,0 +1,43 @@
+#!/usr/bin/ansible-playbook
+- name: Installing Database and Web Server on Amazon Linux
+  hosts: all
+  remote_user: ec2-user
+  become: yes
+  become_user: root
+
+  tasks:
+
+    - name: Install latest httpd using yum
+      ansible.builtin.yum:
+        name: httpd
+        state: latest
+      tags: httpd
+
+    - name: Ensure httpd is installed
+      ansible.builtin.yum:
+        name: httpd
+        state: present
+      tags: httpd
+
+    - name: Start httpd server
+      ansible.builtin.service:
+        name: httpd
+        state: started
+        enabled: yes
+      tags: httpd
+
+    - name: Create a new database with name 'MariaDB-server'
+      community.mysql.mysql_db:
+        name: MariaDB-server
+        state: present
+      tags: mariadb
+
+    - name: Update database MariaDB-server
+      community.mysql.mysql_db:
+        name: MariaDB-server
+        state: latest
+        login_unix_socket: /run/mysqld/mysqld.sock
+      tags: mariadb
+
+
+

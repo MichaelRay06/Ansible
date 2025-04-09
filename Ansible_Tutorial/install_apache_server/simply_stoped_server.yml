@@ -1,0 +1,50 @@
+#!/usr/bin/ansible-playbook
+---
+- name: Install, stop, and start Apache (httpd) on multiple Linux distributions
+  hosts: all
+  become: true
+  gather_facts: true  # Required to determine the OS type
+
+  tasks:
+    - name: Install Apache on Ubuntu
+      ansible.builtin.apt:
+        name: apache2
+        state: present
+        update_cache: true
+      when: ansible_os_family == "Debian"
+
+    - name: Install Apache on CentOS & Amazon Linux
+      ansible.builtin.yum:
+        name: httpd
+        state: present
+        update_cache: true
+      when: ansible_os_family in ["RedHat", "Rocky", "AlmaLinux", "Amazon"]
+
+    - name: Check if Apache is running on Ubuntu
+      ansible.builtin.systemd:
+        name: apache2
+        state: started
+      register: apache_status_ubuntu
+      when: ansible_os_family == "Debian"
+      ignore_errors: true
+
+    - name: Stop Apache on Ubuntu if running
+      ansible.builtin.service:
+        name: apache2
+        state: stopped
+      when: ansible_os_family == "Debian" and apache_status_ubuntu.state == "started"
+
+    - name: Check if Apache is running on CentOS & Amazon Linux
+      ansible.builtin.systemd:
+        name: httpd
+        state: started
+      register: apache_status_rhel
+      when: ansible_os_family in ["RedHat", "Rocky", "AlmaLinux", "Amazon"]
+      ignore_errors: true
+
+    - name: Stop Apache on CentOS & Amazon Linux if running
+      ansible.builtin.service:
+        name: httpd
+        state: stopped
+      when: ansible_os_family in ["RedHat", "Rocky", "AlmaLinux", "Amazon"] and apache_status_rhel.state == "started"
+

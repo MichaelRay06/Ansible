@@ -1,0 +1,40 @@
+#!/usr/bin/ansible-playbook
+---
+- name: Prepare and Transfer index2.html
+  hosts: all
+  become: true
+  gather_facts: false
+
+  tasks:
+    - name: Ensure /files/devs directory exists on control node
+      ansible.builtin.file:
+        path: /files/devs
+        state: directory
+        mode: '0755'
+      delegate_to: localhost
+      run_once: true  # Ensures the task runs only once from the control node
+
+    - name: Create index2.html file using touch on control node
+      ansible.builtin.file:
+        path: /files/devs/index2.html
+        state: touch
+        mode: '0644'
+      delegate_to: localhost
+      run_once: true
+
+    - name: Write content to index2.html on control node
+      ansible.builtin.copy:
+        dest: /files/devs/index2.html
+        content: "THIS IS CREATED USING FILELINE MODULE\n"
+        mode: '0644'
+      delegate_to: localhost
+      run_once: true
+
+    - name: Copy index2.html to remote hosts
+      ansible.builtin.copy:
+        src: /files/devs/index2.html
+        dest: /var/www/html/index.html
+        owner: root
+        group: root
+        mode: '0644'
+

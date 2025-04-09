@@ -1,0 +1,36 @@
+#!/usr/bin/ansible-playbook
+---
+- name: Install and start Apache (httpd) on multiple Linux distributions
+  hosts: all
+  become: true
+  gather_facts: true  # Required to determine the OS type
+
+  tasks:
+    - name: Install Apache on Ubuntu
+      ansible.builtin.apt:
+        name: apache2
+        state: present
+        update_cache: true
+      when: ansible_os_family == "Debian"
+
+    - name: Install Apache on CentOS & Amazon Linux
+      ansible.builtin.yum:
+        name: httpd
+        state: present
+        update_cache: true
+      when: ansible_os_family in ["RedHat", "Rocky", "AlmaLinux", "Amazon"]
+
+    - name: Start and enable Apache on Ubuntu
+      ansible.builtin.service:
+        name: apache2
+        state: started
+        enabled: true
+      when: ansible_os_family == "Debian"
+
+    - name: Start and enable Apache on CentOS & Amazon Linux
+      ansible.builtin.service:
+        name: httpd
+        state: started
+        enabled: true
+      when: ansible_os_family in ["RedHat", "Rocky", "AlmaLinux", "Amazon"]
+

@@ -1,0 +1,14 @@
+#!/usr/bin/ansible-playbook
+- name: create html file write in it and copy the file to remote server
+  hosts: dbservers
+  remote_user: ec2-user
+  become: 'yes'
+  become_user: root
+
+  tasks:
+
+     - name: remove the latest version of Apache
+       ansible.builtin.dnf:
+           name: httpd
+           state: absent
+        

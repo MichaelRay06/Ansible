@@ -1,0 +1,65 @@
+---
+- name: Install and forcefully restart Apache (httpd) on multiple Linux distributions
+  hosts: all
+  become: true
+  gather_facts: true  # Required to determine the OS type
+
+  tasks:
+    - name: Install Apache on Ubuntu
+      ansible.builtin.apt:
+        name: apache2
+        state: present
+        update_cache: true
+      when: ansible_os_family == "Debian"
+
+    - name: Install Apache on CentOS & Amazon Linux
+      ansible.builtin.yum:
+        name: httpd
+        state: present
+        update_cache: true
+      when: ansible_os_family in ["RedHat", "Rocky", "AlmaLinux", "Amazon"]
+
+    - name: Check Apache status on Ubuntu (if apache2 is installed)
+      ansible.builtin.systemd:
+        name: apache2
+        state: started
+      when: ansible_os_family == "Debian"
+      register: apache_status_ubuntu
+      ignore_errors: true
+
+    - name: Check Apache status on CentOS & Amazon Linux (if httpd is installed)
+      ansible.builtin.systemd:
+        name: httpd
+        state: started
+      when: ansible_os_family in ["RedHat", "Rocky", "AlmaLinux", "Amazon"]
+      register: apache_status_rhel
+      ignore_errors: true
+
+    - name: Force restart Apache on Ubuntu if it's not running
+      ansible.builtin.systemd:
+        name: apache2
+        state: restarted
+        enabled: true
+      when: ansible_os_family == "Debian" and apache_status_ubuntu.failed
+
+    - name: Force restart Apache on CentOS & Amazon Linux if it's not running
+      ansible.builtin.systemd:
+        name: httpd
+        state: restarted
+        enabled: true
+      when: ansible_os_family in ["RedHat", "Rocky", "AlmaLinux", "Amazon"] and apache_status_rhel.failed
+
+    - name: Check if Apache started successfully on Ubuntu
+      ansible.builtin.systemd:
+        name: apache2
+        state: started
+      when: ansible_os_family == "Debian"
+      failed_when: apache_status_ubuntu.failed
+
+    - name: Check if Apache started successfully on CentOS & Amazon Linux
+      ansible.builtin.systemd:
+        name: httpd
+        state: started
+      when: ansible_os_family in ["RedHat", "Rocky", "AlmaLinux", "Amazon"]
+      failed_when: apache_status_rhel.failed
+

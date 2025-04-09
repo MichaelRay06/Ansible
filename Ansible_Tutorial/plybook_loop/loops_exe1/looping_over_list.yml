@@ -1,0 +1,50 @@
+#!/usr/bin/ansible-playbook
+---
+name: Package management for Ubuntu and Amazon Linux
+hosts: all
+become: true
+gather_facts: true  # Required to determine the OS type
+
+vars:
+  # OS-specific package lists
+  amazon_packages: ['unzip', 'openssl-devel', 'perl-devel', 'curl', 'wget']
+  ubuntu_packages: ['unzip', 'libssl-dev', 'perl', 'curl', 'wget']
+
+tasks:
+  - name: Install packages (OS-specific)
+    block:
+      - name: Install packages on Amazon Linux
+        ansible.builtin.yum:
+          name: "{{ item }}"
+          state: present
+        loop: "{{ amazon_packages }}"
+        when: ansible_facts['distribution'] == 'Amazon'
+
+      - name: Install packages on Ubuntu
+        ansible.builtin.apt:
+          name: "{{ item }}"
+          state: present
+        loop: "{{ ubuntu_packages }}"
+        when: ansible_facts['distribution'] == 'Ubuntu'
+
+  - name: Uninstall packages (OS-specific)
+    block:
+      - name: Uninstall packages on Amazon Linux
+        ansible.builtin.yum:
+          name: "{{ item }}"
+          state: absent
+        loop: "{{ amazon_packages }}"
+        when: ansible_facts['distribution'] == 'Amazon'
+
+      - name: Uninstall packages on Ubuntu
+        ansible.builtin.apt:
+          name: "{{ item }}"
+          state: absent
+        loop: "{{ ubuntu_packages }}"
+        when: ansible_facts['distribution'] == 'Ubuntu'
+
+  - name: Debug package list with index (demonstration)
+    ansible.builtin.debug:
+      msg: "Package {{ item.1 }} is at index {{ item.0 }}"
+    loop: "{{ (ansible_facts['distribution'] == 'Amazon') | ternary(amazon_packages, ubuntu_packages) | zip(range(100)) | list }}"
+    when: ansible_facts['distribution'] in ['Amazon', 'Ubuntu']

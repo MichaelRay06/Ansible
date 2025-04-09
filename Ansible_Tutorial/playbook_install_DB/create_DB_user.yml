@@ -1,0 +1,63 @@
+#!/usr/bin/ansible-playbook
+- name: Installing WebServer
+  hosts: all
+  remote_user: ec2-user
+  become: 'yes'
+  become_user: root
+
+  tasks:
+     - name: download latest httpd
+       ansible.builtin.service:
+         name: httpd
+         state: latest
+
+
+     - name: start httpd server
+       ansible.builtin.service:
+          name: httpd
+          state: started
+
+
+     - name: install database
+       ansible.builtin.service:
+         name: mariadb
+         state: present
+
+     - name: install database
+       ansible.builtin.service:
+         name: started
+         enable: yes
+
+
+
+     - name: Create a new database with name 'MariaDB-server'
+       community.mysql.mysql_db:
+          name: MariaDB-server
+          state: present
+
+
+     - name: update data base to latest 'MariaDB-server'
+       community.mysql.mysql_db:
+          name: MariaDB-server
+          state: latest
+          login_unix_socket: /run/mysqld/mysqld.sock#
+
+
+
+     - name: Start data base 'MariaDB-server'
+       community.mysql.mysql_db:
+          name: MariaDB-server
+          state: started
+          enable: yes
+          login_unix_socket: /run/mysqld/mysqld.sock
+
+
+
+     - name:  Create database user with name 'michael' and password '12345' with all database privileges
+       community.mysql.mysql_user:
+
+         name: michael
+         password: 12345dd
+         priv: '*.*:ALL'
+         state: present
+ 

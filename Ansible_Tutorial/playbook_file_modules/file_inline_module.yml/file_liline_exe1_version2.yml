@@ -1,0 +1,101 @@
+#!/usr/bin/ansible-playbook
+---
+- name: Apache Configuration Management
+  hosts: all
+  become: true
+  gather_facts: true
+
+  vars:
+    local_conf_dir: "/files/confs"
+    local_conf_file: "{{ local_conf_dir }}/modify.conf"
+    remote_conf_file: "/var/www/html/modify.conf"
+    default_content: |
+      THIS IS CREATED USING FILELINE MODULE
+      I am writing more notes in this file to enable_server false
+      MODULE
+
+  tasks:
+    # Control node file management
+    - name: Ensure configuration directory exists on control node
+      ansible.builtin.file:
+        path: "{{ local_conf_dir }}"
+        state: directory
+        mode: '0755'
+      delegate_to: localhost
+      run_once: true
+
+    - name: Initialize configuration file with content
+      ansible.builtin.copy:
+        dest: "{{ local_conf_file }}"
+        content: "{{ default_content }}"
+        mode: '0644'
+      delegate_to: localhost
+      run_once: true
+
+    # Remote host configuration
+    - name: Deploy configuration to web servers
+      ansible.builtin.copy:
+        src: "{{ local_conf_file }}"
+        dest: "{{ remote_conf_file }}"
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Restart Apache
+
+    - name: Verify configuration file exists
+      ansible.builtin.stat:
+        path: "{{ remote_conf_file }}"
+      register: conf_stat
+
+    - name: Add timeout configuration
+      ansible.builtin.lineinfile:
+        path: "{{ remote_conf_file }}"
+        line: "timeout is 60mins"
+        insertafter: "^MODULE"
+        state: present
+      when: conf_stat.stat.exists
+
+    - name: Update server enable flag
+      ansible.builtin.lineinfile:
+        path: "{{ remote_conf_file }}"
+        regexp: "^enable_server.*"
+        line: "enable_server True"
+      when: conf_stat.stat.exists
+
+    - name: Add configuration header
+      ansible.builtin.lineinfile:
+        path: "{{ remote_conf_file }}"
+        line: "# This file is managed by Ansible - DO NOT EDIT MANUALLY"
+        insertbefore: "BOF"
+      when: conf_stat.stat.exists
+
+    - name: Display current configuration
+      ansible.builtin.command: "cat {{ remote_conf_file }}"
+      register: file_content
+      changed_when: false
+      when: conf_stat.stat.exists
+
+    - name: Show file content
+      ansible.builtin.debug:
+        msg: "{{ file_content.stdout_lines }}"
+      when: file_content is defined
+
+    - name: Remove temporary comments
+      ansible.builtin.lineinfile:
+        path: "{{ remote_conf_file }}"
+        line: "# My comment is that this file could be modified"
+        state: absent
+      when: conf_stat.stat.exists
+
+    - name: Add configuration footer
+      ansible.builtin.lineinfile:
+        path: "{{ remote_conf_file }}"
+        line: "# End of configuration"
+        insertafter: "EOF"
+      when: conf_stat.stat.exists
+
+  handlers:
+    - name: Restart Apache
+      ansible.builtin.service:
+        name: "{{ 'apache2' if ansible_facts['os_family'] == 'Debian' else 'httpd' }}"
+        state: restarted

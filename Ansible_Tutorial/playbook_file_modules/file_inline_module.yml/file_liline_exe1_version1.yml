@@ -1,0 +1,81 @@
+#!/usr/bin/ansible-playbook
+---
+- name: Handler Notifier - Install Apache
+  hosts: all
+  become: true
+  gather_facts: true  # Required to determine the OS type
+
+  tasks:
+    - name: Ensure /files/confs directory exists on control node
+      ansible.builtin.file:
+        path: /files/confs
+        state: directory
+        mode: '0755'
+      delegate_to: localhost
+      run_once: true  
+
+    - name: Create modify.conf file on control node
+      ansible.builtin.file:
+        path: /files/confs/modify.conf
+        state: touch
+        mode: '0644'
+      delegate_to: localhost
+      run_once: true
+
+    - name: Write content to modify.conf on control node
+      ansible.builtin.copy:
+        dest: /files/confs/modify.conf
+        content: |
+          THIS IS CREATED USING FILELINE MODULE
+          I am writing more notes in this file to enable_server false
+      delegate_to: localhost
+      run_once: true
+
+    - name: Copy modify.conf to remote hosts
+      ansible.builtin.copy:
+        src: /files/confs/modify.conf
+        dest: /var/www/html/modify.conf
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Add line to modify.conf on remote hosts
+      ansible.builtin.lineinfile:
+        path: /var/www/html/modify.conf
+        line: "timeout is 60mins"
+        insertafter: "^MODULE"
+        state: present
+
+    - name: Replace enable_server value in modify.conf
+      ansible.builtin.lineinfile:
+        path: /var/www/html/modify.conf
+        regexp: "^enable_server.*"
+        line: "enable_server True"
+
+    - name: Insert comment at the beginning of modify.conf
+      ansible.builtin.lineinfile:
+        path: /var/www/html/modify.conf
+        line: "# My comment is that this file could be modified"
+        insertbefore: BOF
+
+    - name: Save modify.conf content in a register
+      ansible.builtin.command: cat /var/www/html/modify.conf
+      register: file_content_saved
+      changed_when: false  # Ensures task doesn't report a change
+
+    - name: Print saved content of modify.conf
+      ansible.builtin.debug:
+        msg: "{{ file_content_saved.stdout }}"
+
+    - name: Remove specific comment from modify.conf
+      ansible.builtin.lineinfile:
+        path: /var/www/html/modify.conf
+        line: "# My comment is that this file could be modified"
+        state: absent
+
+    - name: Add comment at the end of modify.conf
+      ansible.builtin.lineinfile:
+        path: /var/www/html/modify.conf
+        line: "# My comment is that this file could be modified"
+        insertafter: EOF
+

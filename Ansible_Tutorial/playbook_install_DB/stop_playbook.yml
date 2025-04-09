@@ -1,0 +1,34 @@
+#!/usr/bin/ansible-playbook
+- name: Stop and Uninstall HTTPD on Amazon Linux
+  hosts: all
+  remote_user: ec2-user
+  become: yes
+  become_user: root
+
+  tasks:
+
+    - name: Stop httpd service
+      ansible.builtin.service:
+        name: httpd
+        state: stopped
+      tags: stop_httpd
+
+    - name: Disable httpd service
+      ansible.builtin.service:
+        name: httpd
+        enabled: no
+      tags: disable_httpd
+
+    - name: Uninstall httpd package
+      ansible.builtin.yum:
+        name: httpd
+        state: absent
+      tags: uninstall_httpd
+
+    - name: Remove leftover httpd configuration files
+      ansible.builtin.file:
+        path: /etc/httpd
+        state: absent
+      tags: cleanup_httpd
+
+

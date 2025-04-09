@@ -1,0 +1,16 @@
+#!/usr/bin/ansible-playbook
+- name: Installing WebServer
+  hosts: all
+  remote_user: ubuntu
+  become: 'yes'
+  become_user: root
+
+  tasks:
+    - name: Ensure Apache is at the Latest Version
+      apt:
+        name:  nginx
+        state: latest
+    - name: Ensure Apache is Running
+      service:
+        name:  nginx
+        state: started

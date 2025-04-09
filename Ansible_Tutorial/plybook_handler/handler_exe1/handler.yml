@@ -1,0 +1,22 @@
+#!/usr/bin/ansible-playbook
+---
+- name: Install and start httpd on Amazon Linux if installation is successful
+  hosts: dbservers  # Replace with your specific host group
+  become: true
+
+
+  tasks:
+    - name: Install httpd on Amazon Linux
+      ansible.builtin.yum:
+        name: httpd
+        state: present
+        update_cache: yes
+      register: httpd_install  # Register the result of the installation
+
+    - name: Start httpd if installed successfully
+      ansible.builtin.service:
+        name: httpd
+        state: started
+        enabled: true
+      when: httpd_install.changed  == True # Only start httpd if it was installed successfully
+

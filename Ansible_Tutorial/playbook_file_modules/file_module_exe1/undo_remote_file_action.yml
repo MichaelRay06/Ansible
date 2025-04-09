@@ -1,0 +1,19 @@
+#!/usr/bin/ansible-playbook
+- name: create html file write in it and copy the file to remote server
+  hosts: all
+  #remote_user: ec2-user
+  become: true
+  gather_facts: false
+  #become_user: root
+
+  tasks:
+
+
+     - name: copy the html file to remote location
+       ansible.builtin.file:
+        dest: /var/www/html/index.html
+        state: absent
+        #owner: root
+        #group: root
+        #mode: '0644'
+        

@@ -1,0 +1,70 @@
+#!/usr/bin/ansible-playbook
+---
+- name: Install and Uninstall Packages Using Various Iteration Methods
+  hosts: all
+  become: true
+  gather_facts: true
+
+  vars:
+    packages: ['unzip', 'openssl', 'perl', 'curl', 'wget']
+
+  tasks:
+
+    - name: Install packages (Ubuntu)
+      ansible.builtin.apt:
+        name: "{{ item }}"
+        state: present
+        update_cache: yes
+      loop: "{{ packages }}"
+      when: ansible_os_family == "Debian"
+
+    - name: Install packages (Amazon Linux)
+      ansible.builtin.yum:
+        name: "{{ item }}"
+        state: present
+        update_cache: yes
+      loop: "{{ packages }}"
+      when: ansible_os_family in ["RedHat", "Amazon"]
+
+    - name: Uninstall packages (Ubuntu)
+      ansible.builtin.apt:
+        name: "{{ item }}"
+        state: absent
+      loop: "{{ packages }}"
+      when: ansible_os_family == "Debian"
+
+    - name: Uninstall packages (Amazon Linux)
+      ansible.builtin.yum:
+        name: "{{ item }}"
+        state: absent
+      loop: "{{ packages }}"
+      when: ansible_os_family in ["RedHat", "Amazon"]
+
+    - name: Reinstall packages (Ubuntu)
+      ansible.builtin.apt:
+        name: "{{ item }}"
+        state: present
+      loop: "{{ packages }}"
+      when: ansible_os_family == "Debian"
+
+    - name: Reinstall packages (Amazon Linux)
+      ansible.builtin.yum:
+        name: "{{ item }}"
+        state: present
+      loop: "{{ packages }}"
+      when: ansible_os_family in ["RedHat", "Amazon"]
+
+    - name: Uninstall packages using together method (Amazon Linux)
+      ansible.builtin.yum:
+        name: "{{ item }}"
+        state: absent
+      loop: "{{ packages }}"
+      when: ansible_os_family in ["RedHat", "Amazon"]
+
+    - name: Uninstall packages using together method (Ubuntu)
+      ansible.builtin.apt:
+        name: "{{ item }}"
+        state: absent
+      loop: "{{ packages }}"
+      when: ansible_os_family == "Debian"
+

@@ -1,0 +1,15 @@
+#!/usr/bin/ansible-playbook
+---
+- name: Copy index.html to remote hosts
+  hosts: all
+  become: true
+  gather_facts: false
+
+  tasks:
+    - name: Copy index.html to remote machine
+      ansible.builtin.copy:
+        src: ./folders/index.html
+        dest: /var/www/html/index.html
+        owner: root
+        group: root
+        mode: '0644'

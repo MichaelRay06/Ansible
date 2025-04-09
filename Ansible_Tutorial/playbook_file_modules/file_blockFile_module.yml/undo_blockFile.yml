@@ -1,0 +1,37 @@
+#!/usr/bin/ansible-playbook
+---
+- name: Manage Nginx Configuration Blocks
+  hosts: all
+  become: true
+  gather_facts: true  # Required to determine the OS type
+
+  tasks:
+
+    - name: Remove  new block of text after a marker
+      ansible.builtin.blockinfile:
+        path: /etc/nginx/nginx.conf
+        marker: "# New block of text"
+        state: absent
+      register: block_result
+
+    - name: Print the block insertion result
+      ansible.builtin.debug:
+        var: block_result
+
+    - name: Replace the block of text if it was changed
+      ansible.builtin.blockinfile:
+        path: /etc/nginx/nginx.conf
+        marker: "# Updated block of text"
+        state: absent
+
+
+      when: block_result.changed
+    
+
+    - name: Remove the block if it was changed
+      ansible.builtin.blockinfile:
+        path: /etc/nginx/nginx.conf
+        marker: "# START OF NEW BLOCK"
+        state: absent
+      when: block_result.changed
+

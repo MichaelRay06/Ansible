@@ -1,0 +1,51 @@
+#!/usr/bin/ansible-playbook
+---
+- name: Install and forcefully restart Apache (httpd) on multiple Linux distributions
+  hosts: all
+  become: true
+  gather_facts: true  # Required to determine the OS type
+
+  tasks:
+    - name: Install Apache on Ubuntu
+      ansible.builtin.apt:
+        name: apache2
+        state: present
+        update_cache: true
+      when: ansible_os_family == "Debian"
+
+    - name: Install Apache on CentOS & Amazon Linux
+      ansible.builtin.yum:
+        name: httpd
+        state: present
+        update_cache: true
+      when: ansible_os_family in ["RedHat", "Rocky", "AlmaLinux", "Amazon"]
+
+    - name: Stop Apache on Ubuntu (if running)
+      ansible.builtin.service:
+        name: apache2
+        state: stopped
+      ignore_errors: true
+      when: ansible_os_family == "Debian"
+
+    - name: Stop Apache on CentOS & Amazon Linux (if running)
+      ansible.builtin.service:
+        name: httpd
+        state: stopped
+      ignore_errors: true
+      when: ansible_os_family in ["RedHat", "Rocky", "AlmaLinux", "Amazon"]
+
+    - name: Forcefully restart Apache on Ubuntu
+      ansible.builtin.service:
+        name: apache2
+        state: restarted
+        enabled: true
+      when: ansible_os_family == "Debian"
+
+    - name: Forcefully restart Apache on CentOS & Amazon Linux
+      ansible.builtin.service:
+        name: httpd
+        state: restarted
+        enabled: true
+      when: ansible_os_family in ["RedHat", "Rocky", "AlmaLinux", "Amazon"]
+
+
