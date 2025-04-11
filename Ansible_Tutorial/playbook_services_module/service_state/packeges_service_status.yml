@@ -1,0 +1,15 @@
+#!/usr/bin/ansible-playbook
+---
+- name: Install and configure Nginx with Apache fallback
+  hosts: all
+  become: true
+  gather_facts: true
+
+  tasks:
+
+    - name: Gather service facts
+      ansible.builtin.service_facts:
+
+    - name: print service status for all packages on the remote hosts
+      debug:
+        var: ansible_facts.services

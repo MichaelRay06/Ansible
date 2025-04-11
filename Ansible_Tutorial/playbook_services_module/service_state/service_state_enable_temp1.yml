@@ -1,0 +1,53 @@
+#!/usr/bin/ansible-playbook
+---
+- name: Check and Install Apache, then verify file presence
+  hosts: all
+  become: true
+  gather_facts: true
+
+  tasks:
+
+    - name: Update all packages (Debian/Ubuntu)
+      apt:
+        update_cache: yes
+        upgrade: dist
+
+    - name: Install Nginx
+      apt:
+        name: nginx
+        state: present
+
+    - name: Install Apache
+      apt:
+        name: apache2
+        state: present
+
+    - name: Ensure Nginx is started and enabled
+      systemd:
+        name: nginx
+        state: started
+        enabled: yes
+
+    - name: Gather service facts
+      service_facts:
+
+    - name: Ensure Nginx service is running
+      service:
+        name: nginx
+        state: started
+      when: ansible_facts.services['nginx.service'].state != 'running'
+
+    - name: Ensure Apache service is stopped
+      service:
+        name: apache2
+        state: stopped
+      when: ansible_facts.services['apache2.service'].state != 'stopped'
+
+    - name: Print status of Nginx
+      debug:
+        msg: "Nginx is {{ ansible_facts.services['nginx.service'].state }}"
+
+    - name: Print status of Apache
+      debug:
+        msg: "Apache is {{ ansible_facts.services['apache2.service'].state }}"
+

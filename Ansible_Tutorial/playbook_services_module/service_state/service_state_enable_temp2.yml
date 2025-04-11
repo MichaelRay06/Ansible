@@ -1,0 +1,60 @@
+#!/usr/bin/ansible-playbook
+---
+- name: Install and configure Nginx with Apache fallback
+  hosts: all
+  become: true
+  gather_facts: true
+
+  tasks:
+    - name: Update package cache
+      ansible.builtin.apt:
+        update_cache: yes
+      when: ansible_facts['pkg_mgr'] == 'apt'
+
+    - name: Install Nginx
+      ansible.builtin.apt:
+        name: nginx
+        state: present
+      when: ansible_facts['pkg_mgr'] == 'apt'
+      notify: Enable Nginx
+
+    - name: Install Apache (for fallback)
+      ansible.builtin.apt:
+        name: apache2
+        state: present
+      when: ansible_facts['pkg_mgr'] == 'apt'
+
+    - name: Gather service facts
+      ansible.builtin.service_facts:
+
+    - name: Ensure Nginx is running
+      ansible.builtin.service:
+        name: nginx
+        state: started
+        enabled: true
+      when: 
+        - ansible_facts.services['nginx'] is defined
+        - ansible_facts.services['nginx'].state != 'running'
+
+    - name: Ensure Apache is stopped
+      ansible.builtin.service:
+        name: apache2
+        state: stopped
+        enabled: false
+      when: 
+        - ansible_facts.services['apache2'] is defined
+        - ansible_facts.services['apache2'].state != 'stopped'
+
+    - name: Display Nginx status
+      ansible.builtin.debug:
+        msg: "Nginx is {{ ansible_facts.services['nginx'].state | default('not installed') }}"
+
+    - name: Display Apache status
+      ansible.builtin.debug:
+        msg: "Apache is {{ ansible_facts.services['apache2'].state | default('not installed') }}"
+
+  handlers:
+    - name: Enable Nginx
+      ansible.builtin.service:
+        name: nginx
+        enabled: true
