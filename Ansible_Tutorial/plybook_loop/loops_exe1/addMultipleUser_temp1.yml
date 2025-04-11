@@ -1,0 +1,41 @@
+---
+- name: User and package management playbook
+  hosts: all
+  become: true
+  gather_facts: true
+
+  tasks:
+
+    - name: Create constant users and add them to 'users' group
+      ansible.builtin.user:
+        name: "{{ item }}"
+        state: present
+        groups: users
+      loop:
+        - constant1
+        - constant2
+
+    - name: Install RedHat-specific packages
+      ansible.builtin.package:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - httpd
+        - nginx
+      when: ansible_facts.os_family == "RedHat"
+
+    - name: Create users with specific group assignments
+      ansible.builtin.user:
+        name: "{{ item.name }}"
+        state: present
+        groups: "{{ item.groups }}"
+      loop:
+        - name: multiple-user3
+          groups: michael
+        - name: user4
+          groups: users
+        - name: user5
+          groups: users
+        - name: user6
+          groups: michael
+

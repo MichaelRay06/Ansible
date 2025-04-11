@@ -1,0 +1,74 @@
+#!/usr/bin/ansible-playbook
+---
+- name: Install packages on Ubuntu and Amazon Linux
+  hosts: all
+  become: true
+  gather_facts: true
+
+  vars:
+    amazon_packages: ['unzip', 'openssl-devel', 'perl-devel', 'curl', 'wget']
+    ubuntu_packages: ['unzip', 'libssl-dev', 'perl', 'curl', 'wget']
+
+  tasks:
+    - name: Install packages on Amazon Linux
+      ansible.builtin.yum:
+        name: "{{ item }}"
+        state: present
+      loop: "{{ amazon_packages }}"
+      when: ansible_facts['distribution'] == 'Amazon'
+      tags: [install, amazon, packages]
+
+    - name: Install packages on Ubuntu
+      ansible.builtin.apt:
+        name: "{{ item }}"
+        state: present
+      loop: "{{ ubuntu_packages }}"
+      when: ansible_facts['distribution'] == 'Ubuntu'
+      tags: [install, ubuntu, packages]
+
+- name: Uninstall packages on Ubuntu and Amazon Linux
+  hosts: all
+  become: true
+  gather_facts: true
+
+  vars:
+    amazon_packages: ['unzip', 'openssl-devel', 'perl-devel', 'curl', 'wget']
+    ubuntu_packages: ['unzip', 'libssl-dev', 'perl', 'curl', 'wget']
+
+  tasks:
+    - name: Uninstall packages on Amazon Linux
+      ansible.builtin.yum:
+        name: "{{ item }}"
+        state: absent
+      loop: "{{ amazon_packages }}"
+      when: ansible_facts['distribution'] == 'Amazon'
+      tags: [uninstall, amazon, packages]
+
+    - name: Uninstall packages on Ubuntu
+      ansible.builtin.apt:
+        name: "{{ item }}"
+        state: absent
+      loop: "{{ ubuntu_packages }}"
+      when: ansible_facts['distribution'] == 'Ubuntu'
+      tags: [uninstall, ubuntu, packages]
+
+- name: Debug package list with index
+  hosts: all
+  become: true
+  gather_facts: true
+
+  vars:
+    amazon_packages: ['unzip', 'openssl-devel', 'perl-devel', 'curl', 'wget']
+    ubuntu_packages: ['unzip', 'libssl-dev', 'perl', 'curl', 'wget']
+
+  tasks:
+    - name: Debug package list with index (demonstration)
+      ansible.builtin.debug:
+        msg: "Package {{ item.1 }} is at index {{ item.0 }}"
+      loop: >-
+        {{ (ansible_facts['distribution'] == 'Amazon') |
+           ternary(amazon_packages, ubuntu_packages) |
+           zip(range(100)) | list }}
+      when: ansible_facts['distribution'] in ['Amazon', 'Ubuntu']
+      tags: [debug, info, demo]
+

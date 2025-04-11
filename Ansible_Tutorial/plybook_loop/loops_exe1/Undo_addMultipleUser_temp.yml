@@ -1,0 +1,40 @@
+#!/usr/bin/ansible-playbook
+---
+- name: User and package management playbook
+  hosts: all
+  become: true
+  gather_facts: true  # Required to determine the OS type
+
+  tasks:
+    # Task with a list of items (constant iteration)
+    - name: Remove multiple users and ungroup user
+      ansible.builtin.user:
+        name: "{{ item }}"
+        state: absent
+        groups: "users"
+      loop:
+        - constant_group1
+        - constant_group2
+
+    # Package uninstallation task (fixed to use packages instead of users)
+    - name: Uninstall packages
+      ansible.builtin.package:
+        name: "{{ item }}"
+        state: absent
+      loop:
+        - httpd
+        - curl
+      when: ansible_facts['os_family'] == "RedHat"  # Example condition for yum-based systems
+
+    # Task with dictionary items (two variables)
+    - name: Uncreate multiple users and ungroup users from added groups
+      ansible.builtin.user:
+        name: "{{ item.name }}"
+        state: absent
+        groups: "{{ item.groups }}"
+      loop:
+        - { name: 'multiple-user3', groups: 'systemd' }
+        - { name: 'multiple-user4', groups: 'games' }
+        - { name: 'multiple-user5', groups: 'games' }
+        - { name: 'multiple-user6', groups: 'systemd' }
+
