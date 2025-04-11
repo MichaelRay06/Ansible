@@ -1,0 +1,9 @@
+plugin: amazon.aws.aws_ec2
+filters:
+    
+    instance-state-name: running 
+plugin: amazon.aws.aws_ec2
+filters:
+    
+    instance-state-name: running 
+

@@ -1,0 +1,45 @@
+#!/usr/bin/ansible-playbook
+---
+- name: Install and Uninstall Packages Using Various Iteration Methods
+  hosts: all
+  become: true
+  gather_facts: true
+
+  vars:
+    log_file_path: /var/log/example.log
+    local_log_dest: /tmp/logs/
+
+  tasks:
+
+    - name: Ensure /var/log directory exists on the remote host
+      ansible.builtin.file:
+        path: /var/log
+        state: directory
+        mode: '0755'
+
+    - name: Create a log file on the remote host
+      ansible.builtin.shell: |
+        echo "this is my log content" > {{ log_file_path }}
+      args:
+        creates: "{{ log_file_path }}"
+
+    - name: Compute checksum of the remote log file
+      ansible.builtin.stat:
+        path: "{{ log_file_path }}"
+        checksum_algorithm: sha256
+      register: remote_file_checksum
+
+    - name: Fetch the log file to the control node
+      ansible.builtin.fetch:
+        src: "{{ log_file_path }}"
+        dest: "{{ local_log_dest }}"
+        flat: true
+        validate_checksum: true
+      register: fetch_result
+
+    - name: Display checksum info
+      ansible.builtin.debug:
+        msg: >
+          Remote checksum: {{ remote_file_checksum.stat.checksum }},
+          Local path: {{ fetch_result.dest }}
+
