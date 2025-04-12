@@ -1,0 +1,101 @@
+---
+- name: Update all packages and reboot server if required
+  hosts: all
+  become: true
+  gather_facts: true
+
+  tasks:
+    - name: Update all packages (apt)
+      ansible.builtin.apt:
+        update_cache: yes
+        upgrade: dist
+      when: ansible_facts['pkg_mgr'] == 'apt'
+      register: apt_upgrade
+
+    - name: Update all packages (yum)
+      ansible.builtin.yum:
+        name: '*'
+        state: latest
+      when: ansible_facts['pkg_mgr'] == 'yum'
+      register: yum_upgrade
+
+    - name: Check if reboot is required (Ubuntu/Debian)
+      ansible.builtin.stat:
+        path: /var/run/reboot-required
+      register: reboot_required_file
+      when: ansible_facts['pkg_mgr'] == 'apt'
+
+    - name: Check if reboot is required (RHEL/CentOS)
+      ansible.builtin.shell:
+        cmd: needs-restarting -r
+        executable: /bin/bash
+      register: reboot_required_cmd
+      failed_when: reboot_required_cmd.rc not in [0, 1]
+      changed_when: false
+      when: ansible_facts['pkg_mgr'] == 'yum'
+
+    - name: Reboot server if updates require it
+      ansible.builtin.reboot:
+        msg: "Reboot initiated by Ansible due to package updates"
+        connect_timeout: 5
+        reboot_timeout: 600
+        pre_reboot_delay: 0
+        post_reboot_delay: 30
+      when: 
+        - (apt_upgrade.changed and reboot_required_file.stat.exists) or 
+          (yum_upgrade.changed and reboot_required_cmd.rc == 1)
+
+    - name: Wait for server to come back online
+      ansible.builtin.wait_for_connection:
+        delay: 10
+        timeout: 300
+      when: 
+        - (apt_upgrade.changed and reboot_required_file.stat.exists) or 
+          (yum_upgrade.changed and reboot_required_cmd.rc == 1)
+
+    - name: Verify system is running
+      ansible.builtin.ping:
+
+
+
+
+
+
+
+
+
+        #Key features of this playbook:
+
+          #Multi-OS Support:
+
+  #Handles both apt (Ubuntu/Debian) and yum (RHEL/CentOS) package managers
+
+#Uses appropriate reboot checks for each OS type
+
+#Smart Reboot Handling:
+
+  #Only reboots if updates were actually installed
+
+#Checks specific reboot indicators for each OS
+
+#Uses Ansible's built-in reboot module for safe reboots
+
+#Connection Verification:
+
+  #Waits for server to come back online after reboot
+
+#Includes a final ping test to confirm successful reconnection
+
+#Safety Features:
+
+  #Timeout parameters to prevent hanging
+
+#Proper conditionals to avoid unnecessary reboots
+
+#Connection retries built into the reboot module
+
+#Idempotent Operation:
+
+  #Won't make changes if no updates are available
+
+#Only reboots when absolutely necessary

@@ -1,0 +1,61 @@
+---
+- name: Update packages and reboot if required
+  hosts: all
+  become: yes
+  gather_facts: yes
+
+  tasks:
+    # Update all packages
+    - name: Update system packages
+      package:
+        name: "*"
+        state: latest
+      register: pkg_update
+
+    # Check if reboot is needed
+    - name: Check if reboot required
+      command: "[ -f /var/run/reboot-required ]"
+      register: reboot_needed
+      ignore_errors: yes
+      changed_when: false
+
+    # Reboot if updates were installed and reboot is required
+    - name: Reboot server if needed
+      reboot:
+        msg: "Rebooting after package updates"
+        connect_timeout: 5
+        reboot_timeout: 300
+      when: 
+        - pkg_update.changed
+        - reboot_needed.rc == 0
+
+    # Wait for server to come back online
+    - name: Wait for server to reconnect
+      wait_for_connection:
+        delay: 10
+        timeout: 300
+      when: reboot_needed.rc == 0
+
+    # Verify system is up
+    - name: Confirm system is running
+      ping:
+
+
+
+
+
+        #This playbook:
+
+          #Updates all packages using the generic package module (works on both apt/yum)
+
+#Checks if reboot is needed by testing for the existence of /var/run/reboot-required
+
+#Only reboots if both:
+
+  #Packages were actually updated (pkg_update.changed)
+
+#The system indicates a reboot is needed (reboot_needed.rc == 0)
+
+#Waits for the server to come back online after rebooting
+
+#Finally confirms the system is responsive with a ping test
