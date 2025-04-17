@@ -1,0 +1,52 @@
+#!/usr/bin/ansible-playbook  # Shebang line specifying this is an Ansible playbook
+#
+#
+#---
+# Playbook to demonstrate error handling in Ansible
+- name: Handle errors in directory listing tasks
+  hosts: all
+  remote_user: ec2-user  # Specifies the remote user for connections
+  become: true  # Enables privilege escalation (sudo)
+
+  tasks:
+    # Task 1: List users in home directory with error handling
+    - name: List user names in the home directory
+      ansible.builtin.command: ls /home/  # Corrected path with leading slash
+      register: list_home_directory  # Stores command output
+      ignore_errors: yes  # Continues playbook even if this task fails
+      changed_when: false  # Marks task as unchanged (purely informational)
+
+    # Display results of home directory listing
+    - name: Show home directory listing
+      ansible.builtin.debug:
+        var: list_home_directory  # Prints the registered variable
+      when: list_home_directory is defined  # Only runs if previous task executed
+
+
+    # Task 2: Display Ansible hosts file with error handling
+    - name: List contents of Ansible hosts file
+      ansible.builtin.command: cat /etc/ansible/hosts
+      register: cat_hosts_directory  # Stores command output
+      ignore_errors: yes  # Continues if file doesn't exist
+      changed_when: false  # Purely informational task
+      faile_when: cat_hosts_directory.rc ! == 2
+
+    # Display results of hosts file check
+    - name: Show hosts file contents
+      ansible.builtin.debug:
+        var: cat_hosts_directory  # Prints the registered variable
+      when: cat_hosts_directory is defined  # Only runs if previous task executed
+
+    # Error handling task
+    - name: Handle potential failures
+      block:
+        - name: Check if any tasks failed
+          ansible.builtin.fail:
+            msg: "Playbook encountered errors in directory listing tasks"
+          when:
+            - list_home_directory is failed or
+              cat_hosts_directory is failed
+      rescue:
+        - name: Report errors but continue
+          ansible.builtin.debug:
+            msg: "Error encountered but playbook continuing due to ignore_errors"

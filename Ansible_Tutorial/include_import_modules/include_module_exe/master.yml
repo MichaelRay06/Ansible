@@ -1,0 +1,41 @@
+#!/usr/bin/ansible-playbook
+---
+- name: Multi-Block Playbook with Always Sections
+  hosts: all
+  become: true
+  gather_facts: true
+
+  tasks:
+    # 🔹 First Block: System Updates
+    - name: "BLOCK 1 - System Updates"
+      block:
+        - name: Update apt cache (Debian/Ubuntu)
+          ansible.builtin.apt:
+            update_cache: yes
+          when: ansible_facts['os_family'] == 'Debian'
+
+        - name: Update yum cache (RHEL/CentOS)
+          ansible.builtin.yum:
+            name: '*'
+            state: latest
+          when: ansible_facts['os_family'] == 'RedHat'
+
+      rescue:  # Runs if any task in BLOCK 1 fails
+        - name: Notify admin of update failure
+          ansible.builtin.debug:
+            msg: "System update failed!"
+
+      always:  # Runs REGARDLESS of success/failure
+        - name: Log update completion status
+          ansible.builtin.debug:
+            msg: "Update process completed (successfully or with errors)"
+
+
+       # 🔹 Second Block: Service Management
+     - name: BLOCK 2 - Service Management
+       ansible.builtin.include: include_service_management.yml
+
+
+
+     - name: generate reports
+       ansible.builtin.include: include_reportServer_status.yml

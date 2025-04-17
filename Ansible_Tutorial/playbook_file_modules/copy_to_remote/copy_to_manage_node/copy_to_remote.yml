@@ -1,0 +1,76 @@
+#!/usr/bin/ansible-playbook
+---
+- name: Copy file exercises  # This is a playbook description  
+  hosts: all                 # The tasks will be executed on all hosts in the inventory  
+  become: true               # Runs the tasks with elevated privileges (sudo)  
+
+  tasks:                     # Start of the tasks section  
+
+    - name: Copy and back up bfackupfoo.conf with symbolic mode
+      ansible.builtin.copy:
+        src: ./folder/myfiles/bfackupfoo.conf
+        dest: /etc/bfackupfoo.conf
+        owner: root
+        group: root
+        mode: u+rw,g-wx,o-rwx
+        backup: yes
+      register: result_backup
+
+    - name: Print the backup result
+      ansible.builtin.debug:
+        msg: "Backup file result is: {{ result_backup }}"
+
+    - name: Copy foo2.conf with symbolic permissions
+      ansible.builtin.copy:
+        src: ./folder/myfiles/foo2.conf
+        dest: /etc/ls
+        owner: root
+        group: root
+        mode: u=rw,g=r,o=r
+      register: result
+
+    - name: Print the result
+      ansible.builtin.debug:
+        var: result
+
+
+
+
+
+
+    # - name: Symbolic mode example – add/remove permissions and back up the original  
+    #   ansible.builtin.copy:                # Use the copy module to copy files  
+    #     src: ./folder/myfiles/bfackupfoo.conf   # Source file path  
+    #     dest: /etc/         # Destination file path  
+    #     owner: foo                  # Set the file owner to 'foo'  
+    #     group: foo                  # Set the file group to 'foo'  
+    #     mode: u+rw,g-wx,o-rwx      # Set permissions: owner can read and write, group cannot write/execute, others cannot read/write/execute  
+    #     backup: yes                # Create a backup of the original file  
+    #   register: result_backup      # Register the output/result of this task to 'result_backup' 
+    #   #delegate_to: remote
+
+      
+    
+    # - name: Print the backup result  
+    #   debug:                     # Another debug task to show the backup result  
+    #     msg: "Backup file result is: {{ result_backup }}"  # Print a message showing the backup result  
+      
+      
+
+    # - name: Copy file with owner and permission using symbolic representation  
+    #   ansible.builtin.copy:                       # Copy another file with specified ownership and permissions  
+    #     src: ./folder/myfiles/foo2.conf  # Source file path  
+    #     dest: /etc/ls         # Destination file path  
+    #     owner: foo                  # Set the file owner to 'foo'  
+    #     group: foo                  # Set the file group to 'foo'  
+    #     mode: u=rw,g=r,o=r         # Set permissions: owner can read/write, group can read, others can read  
+    #   register: result            # Register the output/result of this task to 'result'  
+      
+
+    # - name: Print the result  
+    #   debug:                     # Debug module to print messages or variable values  
+    #     var: result              # Print the result of the previous copy task  
+        
+        
+
+   

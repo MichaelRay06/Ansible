@@ -1,0 +1,65 @@
+#!/usr/bin/env ansible-playbook  # Specifies the interpreter for executing this playbook
+
+---  # YAML document start marker
+
+# Main play definition
+- name: Create, deploy and schedule log cleanup script  # Human-readable play description
+  hosts: all                  # Targets all hosts in the inventory
+  become: true                # Enables privilege escalation (sudo)
+  gather_facts: true          # Gathers system facts before execution
+
+  # Task section begins
+  tasks:
+    # TASK 1: Ensure source directory exists on control node
+    - name: Ensure source directory /folder/myfiles exists  # Task description
+      ansible.builtin.file:    # Uses Ansible's file module
+        path: /folder/myfiles  # Directory path to create/maintain
+        state: directory       # Ensures this is a directory
+        mode: '0755'           # Sets permissions to rwxr-xr-x
+      delegate_to: localhost   # Executes on the control node
+      run_once: true           # Only runs once, even with multiple hosts
+
+    # TASK 2: Create default cleanup script if missing
+    - name: Create default cleanup script if missing  # Task description
+      ansible.builtin.copy:    # Uses copy module to create file
+        dest: /folder/myfiles/cleanup_logs.sh  # Destination path
+        content: |             # Multi-line file content
+          #!/bin/bash
+          # Auto-generated log cleanup script
+          # Deletes log files older than 30 days
+          find /var/log -name "*.log" -type f -mtime +30 -delete
+          echo "$(date): Log cleanup completed" >> /var/log/cleanup.log
+        mode: '0755'           # Makes script executable
+        owner: "{{ ansible_user_id }}"  # Uses current Ansible user
+        group: "{{ ansible_user_id }}"  # Uses current Ansible group
+      delegate_to: localhost   # Executes on control node
+      run_once: true           # Only runs once
+      when: not lookup('file', '/folder/myfiles/cleanup_logs.sh', errors='ignore')  # Only if file doesn't exist
+
+    # TASK 3: Ensure destination directory exists on managed nodes
+    - name: Ensure /usr/local/bin exists on managed nodes  # Task description
+      ansible.builtin.file:    # Uses file module
+        path: /usr/local/bin   # Directory path on managed nodes
+        state: directory       # Ensures directory exists
+        mode: '0755'           # Sets permissions to rwxr-xr-x
+
+    # TASK 4: Deploy the cleanup script to managed nodes
+    - name: Copy cleanup script to managed nodes  # Task description
+      ansible.builtin.copy:    # Uses copy module
+        src: /folder/myfiles/cleanup_logs.sh  # Source on control node
+        dest: /usr/local/bin/cleanup_logs.sh  # Destination on managed nodes
+        mode: '0755'           # Makes script executable
+        owner: root            # Sets owner to root
+        group: root            # Sets group to root
+        backup: yes            # Creates backup if file exists
+
+    # TASK 5: Schedule cron job
+    - name: Create weekly log cleanup cron job  # Task description
+      ansible.builtin.cron:    # Uses cron module
+        name: "Log cleanup job"  # Descriptive cron job name
+        job: "/usr/local/bin/cleanup_logs.sh"  # Command to execute
+        minute: "30"           # Runs at 30 minutes past the hour
+        hour: "16"             # Runs at 4 PM (16:00)
+        weekday: "1"           # 1 = Monday (0-6 where 0 is Sunday)
+        user: root             # Runs as root user
+        cron_file: "log_cleanup"  # Creates in /etc/cron.d/log_cleanup

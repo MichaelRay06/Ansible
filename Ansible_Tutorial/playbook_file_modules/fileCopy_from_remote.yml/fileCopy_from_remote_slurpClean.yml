@@ -1,0 +1,36 @@
+#!/usr/bin/ansible-playbook
+---
+- name: Fetch and decode remote Nginx configuration
+  hosts: webserver02
+  # remote_user: ec2-user
+  become: true
+  gather_facts: true
+
+  tasks:
+    - name: Get nginx.conf content from remote host
+      ansible.builtin.slurp:
+        src: /etc/nginx/nginx.conf
+      register: nginx_config
+      when: ansible_facts['os_family'] == 'RedHat'
+
+
+    - name: Display decoded nginx configuration
+      ansible.builtin.debug:
+        msg: "{{ nginx_config.content | b64decode }}"
+          #when: nginx_config.content is defined
+
+    - name: Create local directory for saving config
+      ansible.builtin.file:
+        path: /playbook_file_modules/folder/myfiles
+        state: directory
+        mode: '0755'
+      delegate_to: localhost
+      run_once: true
+
+    - name: Save configuration to local file
+      ansible.builtin.copy:
+        content: "{{ nginx_config.content | b64decode }}"
+        dest: /home/michael/Ansible_Excercise/AnsibleTutorial/Ansible/Ansible_Tutorial/playbook_file_modules/fileCopy_from_remote.yml/nginx.conf
+        mode: '0644'
+      delegate_to: localhost
+

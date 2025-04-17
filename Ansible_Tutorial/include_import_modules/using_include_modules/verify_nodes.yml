@@ -1,0 +1,26 @@
+#!/usr/bin/ansible-playbook
+---
+- name: Server verification block
+  block:
+    - name: Wait for servers to reconnect
+      ansible.builtin.wait_for_connection:
+        delay: 15
+        timeout: 300
+        sleep: 5
+
+    - name: Verify system status
+      ansible.builtin.ping:
+
+    - name: Confirm services are running
+      ansible.builtin.command: systemctl is-system-running
+      register: system_status
+      changed_when: false
+
+    - name: Display system status
+      ansible.builtin.debug:
+        msg: "{{ inventory_hostname }} status: {{ system_status.stdout }}"
+
+  rescue:
+    - name: Handle verification failure
+      ansible.builtin.debug:
+        msg: "Verification failed for {{ inventory_hostname }}"

@@ -1,0 +1,35 @@
+---
+# Ansible Playbook for Log Cleanup Cron Job
+- name: Deploy and schedule log cleanup script
+  hosts: all                  # Applies to all managed nodes
+  become: true                # Uses privilege escalation (sudo)
+  gather_facts: true          # Collects system information
+
+  tasks:
+    # Task 1: Create destination directory for the script
+    - name: Ensure /usr/local/bin exists
+      ansible.builtin.file:
+        path: /usr/local/bin
+        state: directory
+        mode: '0755'          # Sets directory permissions to rwxr-xr-x
+
+    # Task 2: Deploy the cleanup script
+    - name: Copy cleanup script to managed nodes
+      ansible.builtin.copy:
+        src: /folder/myfiles/cleanup_logs.sh  # Source on control node
+        dest: /usr/local/bin/cleanup_logs.sh  # Destination on managed nodes
+        mode: '0755'          # Makes script executable (rwxr-xr-x)
+        owner: root           # Sets owner to root
+        group: root           # Sets group to root
+        backup: yes           # Creates backup if file exists
+
+    # Task 3: Schedule cron job to run every Monday at 16:30
+    - name: Create weekly log cleanup cron job
+      ansible.builtin.cron:
+        name: "Log cleanup job"
+        job: "/usr/local/bin/cleanup_logs.sh"
+        minute: "30"
+        hour: "16"
+        weekday: "1"          # 1 = Monday (0-6 where 0 is Sunday)
+        user: root            # Runs as root user
+        cron_file: "log_cleanup"  # Creates dedicated cron file

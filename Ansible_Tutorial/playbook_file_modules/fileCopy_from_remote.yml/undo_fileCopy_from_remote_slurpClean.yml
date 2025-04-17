@@ -1,0 +1,16 @@
+#!/usr/bin/ansible-playbook
+---
+- name: Undo Fetch and decode remote Nginx configuration
+  hosts: localhost
+  become: true
+  gather_facts: false
+  
+
+  tasks:
+  
+    - name: Undo Save configuration to local file
+      ansible.builtin.file:
+        path: /home/michael/Ansible_Excercise/AnsibleTutorial/Ansible/Ansible_Tutorial/playbook_file_modules/fileCopy_from_remote.yml/nginx.conf
+        mode: '0644'
+        state: absent
+          #delegate_to: localhost

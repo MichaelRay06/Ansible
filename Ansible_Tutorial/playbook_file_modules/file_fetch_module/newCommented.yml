@@ -1,0 +1,48 @@
+#!/usr/bin/ansible-playbook    # Shebang line that allows the playbook to be run directly from the shell
+
+---    # YAML document start indicator
+
+- name: Create, verify, and fetch a log file with checksum validation    # Describes the overall purpose of the playbook
+  hosts: all    # Applies the play to all hosts in the inventory
+  become: true    # Use privilege escalation (sudo) for all tasks
+  gather_facts: true    # Collect system information before running tasks
+
+  vars:    # Declare variables used throughout the play
+    log_path: /var/log/example.log    # The full path to the log file that will be created
+    expected_checksum: "sha256:9e107d9d372bb6826bd81d3542a419d6"    # The expected checksum value to validate against
+    checksum_algorithm: sha256    # The algorithm used to calculate the file's checksum
+
+  tasks:    # List of tasks to be executed
+
+    - name: Ensure /var/log exists on managed nodes    # Ensure the directory for the log file exists
+      ansible.builtin.file:    # Use the file module to manage file/directory properties
+        path: /var/log/    # Target path to ensure exists
+        state: directory    # Ensure the path is a directory
+        mode: '0755'    # Set permissions to rwxr-xr-x
+
+    - name: Create example log file on remote host    # Create a sample log file if it doesn't already exist
+      ansible.builtin.shell: |    # Use the shell module to execute shell commands
+        echo "this is my log content" > {{ log_path }}    # Write a fixed string into the log file
+      args:    # Additional arguments for the shell module
+        creates: "{{ log_path }}"    # This makes the task idempotent – it will skip if the file already exists
+
+    - name: Calculate and validate the checksum of the log file    # Get file stats including the checksum
+      ansible.builtin.stat:    # Use stat module to gather information about a file
+        path: "{{ log_path }}"    # Path to the log file
+        checksum_algorithm: "{{ checksum_algorithm }}"    # Use the declared algorithm to compute the checksum
+      register: log_file_stat    # Save the result to a variable for use in a later task
+
+    - name: Fail if checksum does not match    # Validate the checksum, and fail if it does not match the expected value
+      ansible.builtin.fail:    # Forcefully stop the playbook with a custom error message
+        msg: "Checksum mismatch! Expected {{ expected_checksum }}, got {{ log_file_stat.stat.checksum }}"    # Custom message to show what went wrong
+      when:    # Condition to evaluate before running the task
+        log_file_stat.stat.checksum is defined and    # Ensure the checksum was computed
+        log_file_stat.stat.checksum != expected_checksum    # Fail only if the checksum does not match the expected one
+
+    - name: Fetch log file to control node    # Copy the log file from the managed host to the control node
+      ansible.builtin.fetch:    # Use the fetch module to pull a file from the remote host to the local machine
+        src: "{{ log_path }}"    # Path to the file on the managed host
+        dest: /tmp/logs/    # Destination directory on the control node
+        flat: yes    # Prevent Ansible from creating hostname subdirectories
+        validate_checksum: yes    # Validate file integrity during transfer using checksum
+

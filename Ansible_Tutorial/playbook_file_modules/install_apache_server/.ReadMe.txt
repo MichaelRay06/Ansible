@@ -1,0 +1,59 @@
+This playbook:
+
+Updates all packages using the generic package module (works on both apt/yum)
+
+Checks if reboot is needed by testing for the existence of /var/run/reboot-required
+
+Only reboots if both:
+
+Packages were actually updated (pkg_update.changed)
+
+The system indicates a reboot is needed (reboot_needed.rc == 0)
+
+Waits for the server to come back online after rebooting
+
+Finally confirms the system is responsive with a ping test
+
+
+
+
+
+
+
+#play book 2
+
+Key features of this playbook:
+
+Multi-OS Support:
+
+Handles both apt (Ubuntu/Debian) and yum (RHEL/CentOS) package managers
+
+Uses appropriate reboot checks for each OS type
+
+Smart Reboot Handling:
+
+Only reboots if updates were actually installed
+
+Checks specific reboot indicators for each OS
+
+Uses Ansible's built-in reboot module for safe reboots
+
+Connection Verification:
+
+Waits for server to come back online after reboot
+
+Includes a final ping test to confirm successful reconnection
+
+Safety Features:
+
+Timeout parameters to prevent hanging
+
+Proper conditionals to avoid unnecessary reboots
+
+Connection retries built into the reboot module
+
+Idempotent Operation:
+
+Won't make changes if no updates are available
+
+Only reboots when absolutely necessary

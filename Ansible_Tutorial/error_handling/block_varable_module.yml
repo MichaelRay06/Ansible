@@ -1,0 +1,57 @@
+#!/usr/bin/ansible-playbook
+---
+# Playbook to demonstrate error handling in Ansible
+
+- name: Handle errors in directory listing tasks
+  hosts: all
+  remote_user: ec2-user
+  gather_facts: no
+
+  vars:
+    directories:
+      - { path: "/usr", var_name: "list_usr_directory" }
+      - { path: "/bin", var_name: "list_bin_directory" }
+      - { path: "/root", var_name: "list_root_directory", become: true, ignore_errors: true }
+      - { path: "/home", var_name: "list_home_directory" }
+
+  tasks:
+
+    - name: List contents of important directories
+      block:
+        - name: List directory - {{ item.path }}
+          ansible.builtin.command: "ls -l {{ item.path }}"
+          register: result
+          become: "{{ item.become | default(false) }}"
+          ignore_errors: "{{ item.ignore_errors | default(false) }}"
+          changed_when: false
+          loop: "{{ directories }}"
+          loop_control:
+            label: "{{ item.path }}"
+          vars:
+            result_map: "{{ result_map | default({}) | combine({ (item.var_name): result }) }}"
+        - set_fact:
+            result_map: "{{ result_map }}"
+      rescue:
+        - debug:
+            msg: "An error occurred during directory listing."
+
+    - name: Show directory listing results
+      debug:
+        msg: "{{ item.key }}: {{ item.value.stdout_lines }}"
+      loop: "{{ result_map | dict2items }}"
+
+    - name: Handle potential failures
+      block:
+        - name: Fail play if any directory listing task failed
+          ansible.builtin.fail:
+            msg: "Playbook encountered errors in directory listing tasks"
+          when: >
+            result_map.list_usr_directory is failed or
+            result_map.list_bin_directory is failed or
+            result_map.list_root_directory is failed or
+            result_map.list_home_directory is failed
+      rescue:
+        - name: Report errors but continue
+          ansible.builtin.debug:
+            msg: "Error encountered but playbook continuing due to ignore_errors"
+

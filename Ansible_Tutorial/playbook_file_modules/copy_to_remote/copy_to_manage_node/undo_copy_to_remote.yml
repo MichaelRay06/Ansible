@@ -1,0 +1,33 @@
+#!/usr/bin/ansible-playbook
+---
+- name: Copy file exercises  # This is a playbook description  
+  hosts: all                 # The tasks will be executed on all hosts in the inventory  
+  become: true               # Runs the tasks with elevated privileges (sudo)  
+
+  tasks:                     # Start of the tasks section  
+
+    - name: Undo Copy and back up bfackupfoo.conf with symbolic mode
+      ansible.builtin.file:
+        path: /etc/bfackupfoo.conf
+        state: absent
+      register: result_backup
+
+    - name: Print the backup result
+      ansible.builtin.debug:
+        msg: "Backup file result is: {{ result_backup }}"
+
+
+
+    - name: Undo Copy foo2.conf with symbolic permissions
+      ansible.builtin.file:
+        path: /etc/ls
+        owner: root
+        group: root
+        mode: u=rw,g=r,o=r
+        state: absent
+      register: result
+
+    - name: Print the result
+      ansible.builtin.debug:
+        var: result
+

@@ -1,0 +1,75 @@
+#!/usr/bin/ansible-playbook
+---
+# Playbook to install and configure vsftpd with error handling
+
+- name: Handle errors in directory listing tasks
+  hosts: all
+  remote_user: ec2-user
+  gather_facts: yes
+
+  vars:
+    anonymous_enable: yes
+    local_enable: yes
+    write_enable: yes
+    anon_upload_enable: yes
+
+  tasks:
+
+    - block:
+
+        - name: Install vsftpd
+          ansible.builtin.yum:
+            name: vsftpd
+            state: present
+
+        - name: Backup existing vsftpd config
+          ansible.builtin.copy:
+            src: /etc/vsftpd/vsftpd.conf
+            dest: /etc/vsftpd/vsftpd.conf.bkp
+            remote_src: yes
+
+        - name: Show backup config content
+          ansible.builtin.command: cat /etc/vsftpd/vsftpd.conf.bkp
+          register: vsftpd_conf_backup
+        - debug:
+            var: vsftpd_conf_backup.stdout_lines
+
+        - name: Apply new vsftpd config from Jinja2 template
+          ansible.builtin.template:
+            src: vsftpd.j2
+            dest: /etc/vsftpd/vsftpd.conf
+
+        - name: Show new config content
+          ansible.builtin.command: cat /etc/vsftpd/vsftpd.conf
+          register: vsftpd_conf_new
+        - debug:
+            var: vsftpd_conf_new.stdout_lines
+
+        - name: Simulate failure
+          ansible.builtin.command: ls -l /tmp/does_not_exist
+
+      rescue:
+
+        - name: Recovery message
+          debug:
+            msg: "Directory not found. Restoring backup config."
+
+        - name: Restore backup config
+          ansible.builtin.copy:
+            src: /etc/vsftpd/vsftpd.conf.bkp
+            dest: /etc/vsftpd/vsftpd.conf
+            remote_src: yes
+
+        - name: Show recovered config content
+          ansible.builtin.command: cat /etc/vsftpd/vsftpd.conf
+          register: vsftpd_conf_recovered
+        - debug:
+            var: vsftpd_conf_recovered.stdout_lines
+
+      always:
+
+        - name: Restart vsftpd service
+          ansible.builtin.service:
+            name: vsftpd
+            state: restarted
+

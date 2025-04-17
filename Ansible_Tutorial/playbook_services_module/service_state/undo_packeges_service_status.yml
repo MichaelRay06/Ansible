@@ -1,0 +1,45 @@
+#!/usr/bin/ansible-playbook
+---
+- name: Check and Install Apache, then verify file presence
+  hosts: all
+  become: true
+  gather_facts: true
+
+  tasks:
+    - name: Gather service facts
+      ansible.builtin.service_facts:
+
+    - name: Stop Nginx if running
+      ansible.builtin.service:
+        name: nginx
+        state: stopped
+      when: ansible_facts.services['nginx.service'].state != 'stopped' 
+      when: ansible_facts['os_family'] == 'Debian'
+    
+
+
+    - name: Stop Apache if running
+      ansible.builtin.service:
+        name: apache2
+        state: stopped
+      when: ansible_facts.services['apache2.service'].state != 'stopped' 
+      when: ansible_facts['os_family'] == 'Debian'
+
+    - name: Ensure Nginx is uninstalled
+      ansible.builtin.package:
+        name: nginx
+        state: absent
+
+    - name: Ensure Apache2 is uninstalled
+      ansible.builtin.package:
+        name: apache2
+        state: absent
+
+    - name: Print status of Nginx
+      ansible.builtin.debug:
+        msg: "Nginx is {{ ansible_facts.services['nginx.service'].state if 'nginx.service' in ansible_facts.services else 'not installed' }}"
+
+    - name: Print status of Apache
+      ansible.builtin.debug:
+        msg: "Apache is {{ ansible_facts.services['apache2.service'].state if 'apache2.service' in ansible_facts.services else 'not installed' }}"
+

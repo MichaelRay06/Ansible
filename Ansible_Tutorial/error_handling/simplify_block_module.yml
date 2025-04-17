@@ -1,0 +1,68 @@
+#!/usr/bin/ansible-playbook
+---
+# Playbook to demonstrate error handling in Ansible
+
+- name: Handle errors in directory listing tasks
+  hosts: all
+  remote_user: ec2-user
+
+  tasks:
+
+    - block:
+
+        - name: List contents of the /usr directory
+          ansible.builtin.command: "ls -l /usr/"
+          register: list_usr_directory
+
+        - name: List contents of the /bin directory
+          ansible.builtin.command: "ls -l /bin/"
+          register: list_bin_directory
+
+        - name: List contents of the /root directory
+          ansible.builtin.command: "ls -l /root/"
+          register: list_root_directory
+          become: true
+          ignore_errors: yes
+          changed_when: false
+
+      rescue:
+        - name: Run cleanup or recovery task if any of the above failed
+          debug:
+            msg: "There was a failure, but I have executed cleanup or rectified it."
+
+      always:
+        - name: List contents of the /home directory
+          ansible.builtin.command: "ls -l /home/"
+          register: list_home_directory
+
+    - name: Show /usr directory listing
+      debug:
+        var: list_usr_directory
+
+    - name: Show /bin directory listing
+      debug:
+        var: list_bin_directory
+
+    - name: Show /root directory listing
+      debug:
+        var: list_root_directory
+
+    - name: Show /home directory listing
+      debug:
+        var: list_home_directory
+
+    - name: Handle potential failures
+      block:
+        - name: Fail play if any directory listing task failed
+          ansible.builtin.fail:
+            msg: "Playbook encountered errors in directory listing tasks"
+          when:
+            - list_usr_directory is failed or
+              list_bin_directory is failed or
+              list_root_directory is failed or
+              list_home_directory is failed
+      rescue:
+        - name: Report errors but continue
+          ansible.builtin.debug:
+            msg: "Error encountered but playbook continuing due to ignore_errors"
+

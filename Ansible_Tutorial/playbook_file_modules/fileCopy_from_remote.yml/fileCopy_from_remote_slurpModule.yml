@@ -1,0 +1,41 @@
+#!/usr/bin/ansible-playbook  # Shebang indicating this is an Ansible playbook
+
+---
+# Play definition
+- name: Fetch and decode remote Nginx configuration  # Play description
+  hosts: all  # Runs on all hosts in inventory
+  become: true  # Uses privilege escalation (sudo)
+  gather_facts: true  # Collects system information before execution
+
+  # Task definitions
+  tasks:
+    # Task 1: Fetch remote file content using slurp module
+    - name: Get nginx.conf content from remote host
+      ansible.builtin.slurp:  # Uses the slurp module to read file
+        src: /etc/nginx/nginx.conf  # Remote file path
+      register: nginx_config  # Stores result in variable
+      # Slurp returns content as base64 encoded string in 'content' field
+
+    # Task 2: Display decoded file content
+    - name: Display decoded nginx configuration
+      ansible.builtin.debug:
+        msg: "{{ nginx_config.content | b64decode }}"  # Decodes base64 content
+      when: nginx_config.content is defined  # Only runs if content exists
+
+    # Task 3: Ensure local directory exists
+    - name: Create local directory for saving config
+      ansible.builtin.file:
+        path: /playbook_file_modules/folder/myfiles  # Local directory path
+        state: directory  # Ensures directory exists
+        mode: '0755'  # Sets permissions (rwxr-xr-x)
+      delegate_to: localhost  # Runs on control node
+      run_once: true  # Only runs once, even with multiple hosts
+
+    # Task 4: Save decoded content to local file
+    - name: Save configuration to local file
+      ansible.builtin.copy:
+        content: "{{ nginx_config.content | b64decode }}"  # Decodes content
+        dest: /playbook_file_modules/folder/myfiles/nginx.conf  # Local file path
+        mode: '0644'  # Sets file permissions (rw-r--r--)
+      delegate_to: localhost  # Runs on control node
+      when: nginx_config.content is defined  # Only if content was fetched

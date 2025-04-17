@@ -1,0 +1,46 @@
+#!/usr/bin/ansible-playbook
+---
+- name: Create, verify, and fetch a log file with checksum validation
+  hosts: all
+  become: true
+  gather_facts: true
+
+  vars:
+    log_path: /var/log/example.log
+    expected_checksum: "sha256:9e107d9d372bb6826bd81d3542a419d6"
+    checksum_algorithm: sha256
+
+  tasks:
+
+    - name: Ensure /var/log exists on managed nodes
+      ansible.builtin.file:
+        path: /var/log/
+        state: directory
+        mode: '0755'
+
+    - name: Create example log file on remote host
+      ansible.builtin.shell: |
+        echo "this is my log content" > {{ log_path }}
+      args:
+        creates: "{{ log_path }}"
+
+    - name: Calculate and validate the checksum of the log file
+      ansible.builtin.stat:
+        path: "{{ log_path }}"
+        checksum_algorithm: "{{ checksum_algorithm }}"
+      register: log_file_stat
+
+    - name: Fail if checksum does not match
+      ansible.builtin.fail:
+        msg: "Checksum mismatch! Expected {{ expected_checksum }}, got {{ log_file_stat.stat.checksum }}"
+      when:
+        log_file_stat.stat.checksum is defined and
+        log_file_stat.stat.checksum != expected_checksum
+
+    - name: Fetch log file to control node
+      ansible.builtin.fetch:
+        src: "{{ log_path }}"
+        dest: /tmp/logs/
+        flat: yes
+        validate_checksum: yes
+
