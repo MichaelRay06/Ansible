@@ -1,0 +1,38 @@
+#!/usr/bin/ansible-playbook
+---
+- name: System Package Update and Reboot Management
+  hosts: all
+  become: true
+  gather_facts: true
+
+  tasks:
+    # Update all packages
+    - name: Update system packages
+      ansible.builtin.package:
+        name: "*"
+        state: latest
+      register: pkg_update
+      ignore_errors: yes
+      notify: check_reboot_needed
+
+    # Handler to check reboot requirement after updates
+  handlers:
+    - name: check_reboot_needed
+      ansible.builtin.stat:
+          path: /var/run/reboot-required
+          get_checksum: false
+      register: reboot_required
+      changed_when: false
+      ignore_errors: yes
+
+    # Execute reboot tasks only if needed (runs after all package updates complete)
+    - name: Conditionally execute reboot
+      ansible.builtin.include_tasks: reboot_nodes.yml
+      when: 
+        - reboot_required.stat.exists | default(false)
+        - pkg_update is changed
+      run_once: true  # Controls the entire include operation
+
+    # Always verify connection status
+    - name: Verify node status
+      ansible.builtin.include_tasks: verify_nodes.yml

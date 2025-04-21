@@ -1,0 +1,41 @@
+#!/usr/bin/ansible-playbook
+---
+- name: Multi-Block Update Sections
+  hosts: all
+  become: true
+  gather_facts: true
+
+  tasks:
+
+    # 🔹 BLOCK 1 - System Updates
+    - name: "BLOCK 1 - System Updates"
+      block:
+        - name: Update apt cache (Debian/Ubuntu)
+          ansible.builtin.apt:
+            update_cache: yes
+          when: ansible_facts['os_family'] == 'Debian'
+
+        - name: Update yum cache (RHEL/CentOS)
+          ansible.builtin.yum:
+            name: '*'
+            state: latest
+          when: ansible_facts['os_family'] == 'RedHat'
+
+      rescue:
+        - name: Notify admin of update failure
+          ansible.builtin.debug:
+            msg: "System update failed!"
+
+      always:
+        - name: Log update completion status
+          ansible.builtin.debug:
+            msg: "Update process completed (successfully or with errors)"
+
+    # 🔹 BLOCK 2 - Service Management (Included from separate task file)
+    - name: "BLOCK 2 - Service Management"
+      ansible.builtin.include_tasks: include_service_management.yml
+
+    # 🔹 BLOCK 3 - Final Report (Included from separate task file)
+    - name: "BLOCK 3 - Final Report"
+      ansible.builtin.include_tasks: include_reportServer_status.yml
+

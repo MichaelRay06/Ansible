@@ -1,0 +1,27 @@
+#!/usr/bin/ansible-playbook
+---
+- name: Post-reboot verification block
+  block:
+    - name: Wait for node to reconnect
+      ansible.builtin.wait_for_connection:
+        delay: 20
+        timeout: 600
+        sleep: 10
+
+    - name: Verify system responsiveness
+      ansible.builtin.ping:
+
+    - name: Check system uptime
+      ansible.builtin.command: uptime
+      register: uptime
+      changed_when: false
+
+    - name: Display system status
+      ansible.builtin.debug:
+        msg: "{{ inventory_hostname }} back online (uptime: {{ uptime.stdout }})"
+
+  rescue:
+    - name: Handle verification failure
+      ansible.builtin.debug:
+        msg: "CRITICAL: {{ inventory_hostname }} failed post-reboot verification"
+      changed_when: false

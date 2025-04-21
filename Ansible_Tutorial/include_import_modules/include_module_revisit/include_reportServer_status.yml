@@ -1,19 +1,19 @@
 #!/usr/bin/ansible-playbook
 ---
-- name: Multi-Block Playbook with Always Sections
+- name: Multi-Block Report Section
   hosts: all
   become: true
-  gather_facts: true
+  gather_facts: false
 
   tasks:
-
-     - name: "BLOCK 3 - Final Report"
+    - name: BLOCK 3 - Final Report
       block:
         - name: Generate report data
           ansible.builtin.command: echo "System maintenance completed"
           register: report_status
-      
-      always:  # No rescue, just always
+
+      always:
         - name: Deliver final status
           ansible.builtin.debug:
             msg: "Maintenance operation final status: {{ report_status.stdout }}"
+

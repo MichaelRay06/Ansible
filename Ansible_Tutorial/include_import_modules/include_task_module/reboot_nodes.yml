@@ -1,0 +1,22 @@
+#!/usr/bin/ansible-playbook
+---
+- name: Reboot management block
+  block:
+    - name: Initiate controlled reboot
+      ansible.builtin.reboot:
+        msg: "Automated reboot after package updates"
+        connect_timeout: 10
+        reboot_timeout: 600
+        pre_reboot_delay: 30
+        post_reboot_delay: 60
+      register: reboot_result
+
+    - name: Log reboot initiation
+      ansible.builtin.debug:
+        msg: "Successfully triggered reboot on {{ inventory_hostname }}"
+
+  rescue:
+    - name: Handle reboot failure
+      ansible.builtin.debug:
+        msg: "WARNING: Reboot failed on {{ inventory_hostname }}"
+      changed_when: false

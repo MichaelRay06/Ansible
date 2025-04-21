@@ -28,6 +28,17 @@
         path: "{{ log_file_path }}"
         checksum_algorithm: sha256
       register: remote_file_checksum
+    
+    - name: Print content of log file
+      ansible.builtin.command: cat /var/log/example.log
+      register: log_output    # Save the output of the command
+      changed_when: false     # Prevent Ansible from marking this task as "changed" since it's just reading
+
+    - name: Display log file content
+      ansible.builtin.debug:
+        msg: "{{ log_output.stdout }}"    # Show only the actual content of the file
+
+
 
     - name: Fetch the log file to the control node
       ansible.builtin.fetch:

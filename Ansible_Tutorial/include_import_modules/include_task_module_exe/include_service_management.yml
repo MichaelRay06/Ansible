@@ -1,0 +1,24 @@
+- name: "BLOCK 2 - Service Management"
+  block:
+    - name: Ensure Nginx is running
+      ansible.builtin.service:
+        name: nginx
+        state: started
+        enabled: yes
+
+    - name: Ensure Apache is stopped
+      ansible.builtin.service:
+        name: httpd
+        state: stopped
+        enabled: no
+
+  rescue:
+    - name: Log service failure
+      ansible.builtin.debug:
+        msg: "Failed to manage services!"
+
+  always:
+    - name: Cleanup temporary files
+      ansible.builtin.file:
+        path: /tmp/service_setup.tmp
+        state: absent

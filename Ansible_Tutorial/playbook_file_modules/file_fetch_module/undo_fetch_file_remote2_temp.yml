@@ -1,0 +1,40 @@
+#!/usr/bin/ansible-playbook
+---
+- name: Manage and fetch log file
+  hosts: all
+  become: true
+  gather_facts: true
+
+  vars:
+    log_file_path: /var/log/example.log
+    local_log_dest: /tmp/logs/
+
+  tasks:
+
+    - name: Ensure log file is absent
+      ansible.builtin.file:
+        path: "{{ log_file_path }}"
+        state: absent
+
+    - name: Attempt to read log file content
+      ansible.builtin.command: cat "{{ log_file_path }}"
+      register: log_output
+      changed_when: false
+      ignore_errors: true
+
+    - name: Show log file content if present
+      ansible.builtin.debug:
+        msg: "{{ log_output.stdout }}"
+      when: log_output.stdout is defined
+
+    - name: Fetch log file to control node
+      ansible.builtin.file:
+        path: "{{ local_log_dest }}"
+        state: absent
+      register: fetch_result
+     
+
+    - name: Show fetch result
+      ansible.builtin.debug:
+        var: fetch_result
+

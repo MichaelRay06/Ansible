@@ -1,0 +1,10 @@
+- name: "BLOCK 3 - Final Report"
+  block:
+    - name: Generate report data
+      ansible.builtin.command: echo "System maintenance completed"
+      register: report_status
+
+  always:
+    - name: Deliver final status
+      ansible.builtin.debug:
+        msg: "Maintenance operation final status: {{ report_status.stdout }}"

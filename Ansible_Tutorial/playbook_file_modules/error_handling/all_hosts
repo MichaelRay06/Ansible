@@ -1,19 +1,19 @@
 all:
   hosts:
     ec2_node:
-      ansible_host: 13.42.7.41
+      ansible_host: 18.134.207.176
 
 
     ec2_node01:
-      ansible_host: 13.42.7.41
+      ansible_host: 18.134.207.176
      # ansible_user: ec2-user
 
     ubuntu_node01:
-      ansible_host: 18.175.129.96
+      ansible_host: 18.134.181.106
       ansible_user: ubuntu
 
     cento_node01:
-      ansible_host: 35.178.168.226
+      ansible_host: 35.178.116.161
       #ansible_user: ec2-user
 
   children:
