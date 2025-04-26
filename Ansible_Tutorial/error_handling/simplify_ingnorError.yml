@@ -3,7 +3,9 @@
 # Playbook to demonstrate error handling in Ansible
 - name: Handle errors in directory listing tasks
   hosts: all                                                                                                                                                                                                       remote_user: ec2-user  # Specifies the remote user for connections
-  become: true  # Enables privilege escalation (sudo)                                                                                                                                                                                                                                                                                                                                                                               tasks:                                                                                                                                                                                                             # Task 1: List users in home directory with error handling
+  become: true  # Enables privilege escalation (sudo)  
+  
+  tasks:                                                                                                                                                                                                                                                                                                                                                                             tasks:                                                                                                                                                                                                             # Task 1: List users in home directory with error handling
     - name: List user names in the home directory
       ansible.builtin.command: ls /home/  # Corrected path with leading slash
       register: list_home_directory  # Stores command output

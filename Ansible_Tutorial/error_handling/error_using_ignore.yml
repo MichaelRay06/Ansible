@@ -1,7 +1,5 @@
 #!/usr/bin/ansible-playbook  # Shebang line specifying this is an Ansible playbook
-#
-#
-#---
+---
 # Playbook to demonstrate error handling in Ansible
 - name: Handle errors in directory listing tasks
   hosts: all
